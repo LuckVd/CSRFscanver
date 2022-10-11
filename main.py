@@ -16,7 +16,8 @@ headers = {  # default headers
     'Upgrade-Insecure-Requests': '1',
 }
 commonNames = ['csrf', 'auth', 'token', 'verify', 'hash']
-
+whitelist = ['搜索','search','登录','login']
+blacklist = ['保存','save','修改','change','提交','submit']
 
 def requester(url, data, headers, GET, delay):
     time.sleep(delay)
@@ -113,9 +114,8 @@ def scan(oriurl:str):
     forms=list()
     params = getParams(oriurl, '', True)
     url = getUrl(oriurl, '', True)
-    response = requester(url, params, headers, True, 0).text
+    response = requester(url, params, headers, True, 0).text.encode('latin-1').decode('utf-8')
     forms.append(zetanize(url, response))
-    print(forms)
     allTokens = []
     weakTokens = []
     tokenDatabase = []
@@ -124,12 +124,31 @@ def scan(oriurl:str):
     evaluate(url,forms, weakTokens, tokenDatabase, allTokens, insecureForms)
     if insecureForms:
         print('%s Insecure form(s) found' )
+        Insforms = list()
         for insecureForm in insecureForms:
-            url = list(insecureForm.keys())[0]
-            action = list(insecureForm.values())[0]['action']
-            print(url,action)
+            sform = str(insecureForm).lower()
+
+            wflag = False
+            for w in whitelist:
+                if w in sform:
+                    wflag = True
+                    break
+            bflag = False
+            if wflag:
+                for b in blacklist:
+                    if b in sform:
+                        bflag = True
+                        break
+            if not bflag:
+                url = list(insecureForm.keys())[0]
+                action = list(insecureForm.values())[0]['action']
+                Insforms.append({url:action})
+            else:
+                continue
+        return Insforms
 
 
 
 
-scan("http://192.168.144.128/DVWA-master/vulnerabilities/csrf?a=1&b=2")
+# scan("http://192.168.144.128/DVWA-master/vulnerabilities/csrf?a=1&b=2")
+print(scan("http://127.0.0.1/toJumpPage"))
